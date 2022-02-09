@@ -49,12 +49,11 @@ void VideoPlayerController::destroy() {
 
     pthread_join(initThreadThreadId, 0);
 
-    //todo syy
-//    if (NULL != videoOutput) {
-//        videoOutput->stopOutput();
-//        delete videoOutput;
-//        videoOutput = NULL;
-//    }
+    if (NULL != videoOutput) {
+        videoOutput->stopOutput();
+        delete videoOutput;
+        videoOutput = NULL;
+    }
 
     if (NULL != synchronizer) {
         synchronizer->isDestroyed = true;
@@ -93,7 +92,26 @@ void VideoPlayerController::pause() {
 }
 
 void VideoPlayerController::onSurfaceCreated(ANativeWindow *window, int width, int height) {
+    LOGI("enter VideoPlayerController::onSurfaceCreated...");
 
+    if (window != NULL){
+        this->window = window;
+    }
+
+    if (userCancelled){
+        return;
+    }
+
+    if (width > 0 && height > 0){
+        this->screenHeight = height;
+        this->screenWidth = width;
+    }
+    if (!videoOutput) {
+        initVideoOutput(window);
+    }else{
+        videoOutput->onSurfaceCreated(window);
+    }
+    LOGI("Leave VideoPlayerController::onSurfaceCreated...");
 }
 
 void *VideoPlayerController::initThreadCallback(void *myself) {
@@ -222,6 +240,43 @@ int VideoPlayerController::consumeAudioFrames(byte *outData, size_t bufferSize) 
 void VideoPlayerController::signalOutputFrameAvailable() {
 //  LOGI("signalOutputFrameAvailable");
     if (NULL != videoOutput) {
-//        videoOutput->signalFrameAvailable();
+        videoOutput->signalFrameAvailable();
+    }
+}
+
+void VideoPlayerController::initVideoOutput(ANativeWindow *pWindow) {
+    LOGI("VideoPlayerController::initVideoOutput beigin width:%d, height:%d", screenWidth, screenHeight);
+    if (window == NULL || userCancelled){
+        return;
+    }
+    videoOutput = new VideoOutput();
+    videoOutput->initOutput(window, screenWidth, screenHeight,videoCallbackGetTex, this);
+}
+
+
+int VideoPlayerController::videoCallbackGetTex(FrameTexture** frameTex, void* ctx, bool forceGetFrame){
+    VideoPlayerController* playerController = (VideoPlayerController*) ctx;
+    return playerController->getCorrectRenderTexture(frameTex, forceGetFrame);
+}
+
+int VideoPlayerController::getCorrectRenderTexture(FrameTexture** frameTex, bool forceGetFrame){
+    int ret = -1;
+
+    if (!synchronizer->isDestroyed) {
+        if(synchronizer->isPlayCompleted()) {
+            LOGI("Video Render Thread render Completed We will Render First Frame...");
+            (*frameTex) = synchronizer->getFirstRenderTexture();
+        } else {
+            (*frameTex) = synchronizer->getCorrectRenderTexture(forceGetFrame);
+        }
+        ret = 0;
+    }
+    return ret;
+}
+
+void VideoPlayerController::onSurfaceDestroyed() {
+    LOGI("enter VideoPlayerController::onSurfaceDestroyed...");
+    if (videoOutput) {
+        videoOutput->onSurfaceDestroyed();
     }
 }

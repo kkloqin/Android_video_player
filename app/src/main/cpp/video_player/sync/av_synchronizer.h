@@ -11,12 +11,14 @@
 #include "../decoder/ffmpeg_video_decoder.h"
 #include "../../common/opengl_media/movie_frame.h"
 #include <queue>
+#include "opengl_media/render/video_gl_surface_render.h"
 
 using namespace std;
 // 以下是解码本地文件的时候的缓冲区的最小和最大值
 #define LOCAL_MIN_BUFFERED_DURATION   			0.5
 #define LOCAL_MAX_BUFFERED_DURATION   			0.8
 #define LOCAL_AV_SYNC_MAX_TIME_DIFF         		0.05
+#define DEFAULT_AUDIO_BUFFER_DURATION_IN_SECS	0.03
 
 class AVSynchronizer;
 
@@ -91,6 +93,12 @@ public:
 
     void clearFrameMeta();
 
+    FrameTexture *getFirstRenderTexture();
+
+    FrameTexture *getCorrectRenderTexture(bool b);
+
+    void processVideoFrame(GLuint i, int i1, int i2, float d);
+
 protected:
     std::queue<AudioFrame*> *audioFrameQueue;
     /** 解码出来的videoFrame与audioFrame的容器，以及同步操作信号量 **/
@@ -122,6 +130,7 @@ protected:
     pthread_cond_t videoDecoderCondition;
     pthread_t videoDecoderThread;
     CircleFrameTextureQueue* circleFrameTextureQueue;
+    VideoGLSurfaceRender* passThorughRender;
 
     virtual void createDecoderInstance();
     virtual void initMeta();
@@ -171,6 +180,10 @@ protected:
     int onCompletion();
 
     virtual void useForstatistic(int leftVideoFrames){};
+
+    void renderToVideoQueue(GLuint inputTexId, int width, int height, float position);
+
+    void frameAvailable();
 };
 
 

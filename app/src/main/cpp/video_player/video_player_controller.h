@@ -83,6 +83,12 @@ protected:
     int consumeAudioFrames(byte *string, size_t i);
 
     void setInitializedStatus(bool initCode);
+
+    void initVideoOutput(ANativeWindow *pWindow);
+
+    static int videoCallbackGetTex(FrameTexture** frameTex, void* ctx, bool forceGetFrame);
+
+    int getCorrectRenderTexture(FrameTexture **frameTex, bool forceGetFrame);
 };
 
 

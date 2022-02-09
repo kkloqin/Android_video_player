@@ -12,9 +12,9 @@
  *
  */
 void UploaderCallbackImpl::processVideoFrame(GLuint inputTexId, int width, int height, float position) {
-//    if (mParent){
-//        mParent->processVideoFrame(inputTexId, width, height, position);
-//    }
+    if (mParent){
+        mParent->processVideoFrame(inputTexId, width, height, position);
+    }
 }
 
 int UploaderCallbackImpl::processAudioData(short *sample, int size, float position, byte** buffer) {
@@ -207,9 +207,9 @@ int AVSynchronizer::jniCallbackWithArguments(const char* signature, const char* 
 
 void AVSynchronizer::start() {
     isOnDecoding = true;
-//    pauseDecodeThreadFlag = false;
+    pauseDecodeThreadFlag = false;
 
-//    circleFrameTextureQueue->setIsFirstFrame(true);
+    circleFrameTextureQueue->setIsFirstFrame(true);
 
     //开启解码线程
     initDecoderThread();
@@ -523,16 +523,16 @@ int AVSynchronizer::getVideoFrameHeight() {
     return videoHeight;
 }
 
-void AVSynchronizer::OnInitFromUploaderGLContext(EGLCore *pCore, int videoFrameWidth, int videoFrameHeight) {
-//    if (NULL == passThorughRender) {
-//        passThorughRender = new VideoGLSurfaceRender();
-//        bool isGLViewInitialized = passThorughRender->init(videoFrameWidth,videoFrameHeight);
-//        if (!isGLViewInitialized) {
-//            LOGI("GL View failed on initialized...");
-//        }
-//    }
+void AVSynchronizer::OnInitFromUploaderGLContext(EGLCore *eglCore, int videoFrameWidth, int videoFrameHeight) {
+    if (NULL == passThorughRender) {
+        passThorughRender = new VideoGLSurfaceRender();
+        bool isGLViewInitialized = passThorughRender->init(videoFrameWidth,videoFrameHeight);
+        if (!isGLViewInitialized) {
+            LOGI("GL View failed on initialized...");
+        }
+    }
     initCircleQueue(videoFrameWidth, videoFrameHeight);
-//    eglCore->doneCurrent();
+    eglCore->doneCurrent();
 }
 
 
@@ -629,10 +629,91 @@ void AVSynchronizer::clearFrameMeta() {
     }
 }
 
+FrameTexture *AVSynchronizer::getFirstRenderTexture() {
+    if (circleFrameTextureQueue)
+        return circleFrameTextureQueue->getFirstFrameFrameTexture();
+    return NULL;
+}
 
+FrameTexture* AVSynchronizer::getCorrectRenderTexture(bool forceGetFrame) {
+    FrameTexture *texture = NULL;
+    if (!circleFrameTextureQueue) {
+        LOGE("getCorrectRenderTexture::circleFrameTextureQueue is NULL");
+        return texture;
+    }
+    int leftVideoFrames = decoder->validVideo() ? circleFrameTextureQueue->getValidSize() : 0;
+    if (leftVideoFrames == 1) {
+        return texture;
+    }
+    while (true) {
+        int ret = circleFrameTextureQueue->front(&texture);
+        if(ret > 0){
+            if (forceGetFrame) {
+                return texture;
+            }
+            const float delta = (moviePosition - DEFAULT_AUDIO_BUFFER_DURATION_IN_SECS) - texture->position;
+            if (delta < (0 - syncMaxTimeDiff)) {
+                //视频比音频快了好多,我们还是渲染上一帧
+//				LOGI("视频比音频快了好多,我们还是渲染上一帧 moviePosition is %.4f texture->position is %.4f", moviePosition, texture->position);
+                texture = NULL;
+                break;
+            }
+            circleFrameTextureQueue->pop();
+            if (delta > syncMaxTimeDiff) {
+                //视频比音频慢了好多,我们需要继续从queue拿到合适的帧
+//				LOGI("视频比音频慢了好多,我们需要继续从queue拿到合适的帧 moviePosition is %.4f texture->position is %.4f", moviePosition, texture->position);
+                continue;
+            } else {
+                break;
+            }
+        } else{
+            texture = NULL;
+            break;
+        }
+    }
+    return texture;
+}
 
+void AVSynchronizer::processVideoFrame(GLuint inputTexId, int width, int height, float position){
+    //注意:这里已经在EGL Thread中，并且已经绑定了一个FBO 只要在里面进行切换FBO的attachment就可以了
+    renderToVideoQueue(inputTexId, width, height, position);
+}
 
+void AVSynchronizer::renderToVideoQueue(GLuint inputTexId, int width, int height, float position) {
+    if (!passThorughRender){
+        LOGE("renderToVideoQueue::passThorughRender is NULL");
+        return;
+    }
 
+    if (!circleFrameTextureQueue) {
+        LOGE("renderToVideoQueue::circleFrameTextureQueue is NULL");
+        return;
+    }
 
+    //注意:先做上边一步的原因是 担心videoEffectProcessor处理速度比较慢 这样子就把circleQueue锁住太长时间了
+    bool isFirstFrame = circleFrameTextureQueue->getIsFirstFrame();
+    FrameTexture* frameTexture = circleFrameTextureQueue->lockPushCursorFrameTexture();
+    if (NULL != frameTexture) {
+        frameTexture->position = position;
+//		LOGI("Render To TextureQueue texture Position is %.3f ", position);
+        //cpy input texId to target texId
+        passThorughRender->renderToTexture(inputTexId, frameTexture->texId);
+        circleFrameTextureQueue->unLockPushCursorFrameTexture();
+
+        frameAvailable();
+
+        // backup the first frame
+        if (isFirstFrame) {
+            FrameTexture* firstFrameTexture = circleFrameTextureQueue->getFirstFrameFrameTexture();
+            if (firstFrameTexture) {
+                //cpy input texId to target texId
+                passThorughRender->renderToTexture(inputTexId, firstFrameTexture->texId);
+            }
+        }
+    }
+}
+
+void AVSynchronizer::frameAvailable() {
+}
 
 
