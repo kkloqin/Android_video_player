@@ -15,9 +15,6 @@
 #include "CommonTools.h"
 #include <list>
 #include <vector>
-#include "../texture_uploader/texture_frame_uploader.h"
-#include "../texture_uploader/yuv_texture_frame_uploader.h"
-
 using namespace std;
 
 extern "C" {

@@ -108,7 +108,6 @@ int VideoDecoder::openFile(DecoderRequestHeader *requestHeader) {
 }
 
 void VideoDecoder::startUploader(UploaderCallback * pUploaderCallback) {
-	LOGI("startUploader");
 	mUploaderCallback = pUploaderCallback;
 	textureFrameUploader = createTextureFrameUploader();
 	textureFrameUploader->registerUpdateTexImageCallback(update_tex_image_callback, signal_decode_thread_callback, this);

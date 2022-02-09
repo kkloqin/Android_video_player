@@ -1,5 +1,5 @@
 #include "matrix.h"
-#include <string.h>
+
 #define PI 3.1415926f
 #define normalize(x, y, z)                  \
 {                                               \

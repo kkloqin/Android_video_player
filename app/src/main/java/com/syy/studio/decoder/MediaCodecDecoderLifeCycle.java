@@ -13,7 +13,7 @@ public abstract class MediaCodecDecoderLifeCycle {
 		useMediaCodec = value;
 	}
 	/** 2:底层判断是否使用硬件解码器 **/
-	public boolean isHWCodecAvailableFromNative() {
+	public boolean isHWCodecAvaliableFromNative() {
 		boolean ret = false;
 		Log.i("problem", "useMediaCodec " + useMediaCodec);
 		if (useMediaCodec) {
