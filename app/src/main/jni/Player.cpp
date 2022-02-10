@@ -48,23 +48,32 @@ Java_com_syy_studio_player_Player_pause(JNIEnv *env, jobject thiz) {
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_syy_studio_player_Player_onSurfaceCreated(JNIEnv *env, jobject thiz, jobject surface) {
-    // TODO: implement onSurfaceCreated()
+    if (NULL != videoPlayerController) {
+        window = ANativeWindow_fromSurface(env, surface);
+//        videoPlayerController->onSurfaceCreated(window, width, height);
+    }
 }
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_syy_studio_player_Player_onSurfaceDestroyed(JNIEnv *env, jobject thiz, jobject surface) {
-    // TODO: implement onSurfaceDestroyed()
+    if (NULL != videoPlayerController) {
+        videoPlayerController->onSurfaceDestroyed();
+    }
 }
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_syy_studio_player_Player_resetRenderSize(JNIEnv *env, jobject thiz, jint left, jint top,
                                                   jint width, jint height) {
-    // TODO: implement resetRenderSize()
+    if(NULL != videoPlayerController) {
+        videoPlayerController->resetRenderSize(left, top, width, height);
+    }
 }
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_syy_studio_player_Player_play(JNIEnv *env, jobject thiz) {
-    // TODO: implement play()
+    if(NULL != videoPlayerController) {
+        videoPlayerController->play();
+    }
 }
 extern "C"
 JNIEXPORT void JNICALL
@@ -78,30 +87,44 @@ Java_com_syy_studio_player_Player_stop(JNIEnv *env, jobject thiz) {
 extern "C"
 JNIEXPORT jfloat JNICALL
 Java_com_syy_studio_player_Player_getBufferedProgress(JNIEnv *env, jobject thiz) {
-    // TODO: implement getBufferedProgress()
+    if (NULL != videoPlayerController) {
+        return videoPlayerController->getBufferedProgress();
+    }
+    return 0.0f;
 }
 extern "C"
 JNIEXPORT jfloat JNICALL
 Java_com_syy_studio_player_Player_getPlayProgress(JNIEnv *env, jobject thiz) {
-    // TODO: implement getPlayProgress()
+    if (NULL != videoPlayerController) {
+        return videoPlayerController->getPlayProgress();
+    }
+    return 0.0f;
 }
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_syy_studio_player_Player_seekToPosition(JNIEnv *env, jobject thiz, jfloat position) {
-    // TODO: implement seekToPosition()
+    if(NULL != videoPlayerController) {
+        videoPlayerController->seekToPosition(position);
+    }
 }
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_syy_studio_player_Player_seekCurrent(JNIEnv *env, jobject thiz, jfloat position) {
-    // TODO: implement seekCurrent()
+    if(NULL != videoPlayerController) {
+//		videoPlayerController->seekCurrent(position);
+    }
 }
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_syy_studio_player_Player_beforeSeekCurrent(JNIEnv *env, jobject thiz) {
-    // TODO: implement beforeSeekCurrent()
+    if(NULL != videoPlayerController) {
+//		videoPlayerController->beforeSeekCurrent();
+    }
 }
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_syy_studio_player_Player_afterSeekCurrent(JNIEnv *env, jobject thiz) {
-    // TODO: implement afterSeekCurrent()
+    if(NULL != videoPlayerController) {
+//		videoPlayerController->afterSeekCurrent();
+    }
 }
